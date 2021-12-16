@@ -1,12 +1,16 @@
 import React from "react";
-import {auth, provider} from "../firebaseConfig";
+import db, {auth, provider} from "../firebaseConfig";
 
-const Login = ({setUser}) => {
+const Login = ({createUserIfNotExists}) => {
 
     const signIn = () => {
+        let userName;
         auth
             .signInWithPopup(provider)
-            .then(result => {setUser(result.additionalUserInfo.profile.name); console.log(result)})
+            .then(result => {
+                userName = result.additionalUserInfo.profile.name;
+                createUserIfNotExists(userName);
+            })
             .catch(error => alert(error.message));
     };
 

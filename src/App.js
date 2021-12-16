@@ -14,6 +14,7 @@ import Login from "./components/Login";
 
 function App() {
     const [currentUser, setUser] = useState(null);
+    const [allUsers, setAllUsers] = useState([]);
     const [data, setData] = useState(contactsMessages)
     const [contactSelected, setContactSelected] = useState({})
     const [currentMessages, setCurrentMessages] = useState([])
@@ -23,6 +24,12 @@ function App() {
 
     useEffect(() => {
         const currContact = data.find((d) => d.contact.id === contactSelected.id)
+        db.collection('users').onSnapshot(snapShot => (
+            setAllUsers(snapShot.docs.map(doc => ({
+                id: doc.id,
+                data: doc.data(),
+            })))
+        ))
         setCurrentMessages((currContact && currContact.messages) || [])
         filterContacts(data, search)
     }, [contactSelected, data, search])
@@ -35,7 +42,6 @@ function App() {
                 messages: [...data[index].messages, new Message(true, message, new Date())],
             },
         })
-
         setData(newData)
         setMessage('')
     }
@@ -47,15 +53,27 @@ function App() {
         setFilterContacts(result)
     }
 
+    const createUserIfNotExists = (userName) => {
+        setUser(userName);
+        console.log(allUsers);
+        allUsers.forEach(user => {
+            if (user.data.name === userName) {
+                db.collection("users").add({
+                    userName: userName
+                })
+            }
+        })
+    }
+
     return (
         <>
             {!currentUser ? (
-                <Login setUser={setUser}/>
+                <Login createUserIfNotExists={createUserIfNotExists} allUsers={allUsers}/>
             ) : (
                 <div className="app">
                     <aside>
                         <header>
-                            <Avatar user={{name:currentUser}} showName/>
+                            <Avatar user={{name: currentUser}} showName/>
                         </header>
                         <Search search={search} setSearch={setSearch}/>
                         <div className="contact-boxes">
