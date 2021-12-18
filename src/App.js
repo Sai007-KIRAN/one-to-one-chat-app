@@ -15,8 +15,9 @@ import Login from "./components/Login";
 function App() {
     const [currentUser, setUser] = useState(null);
     const [allUsers, setAllUsers] = useState([]);
+    const [messages, setAllMessages] = useState([]);
     const [data, setData] = useState(contactsMessages)
-    const [contactSelected, setContactSelected] = useState({})
+    const [contactSelected, setContactSelected] = useState("")
     const [currentMessages, setCurrentMessages] = useState([])
     const [message, setMessage] = useState('')
     const [search, setSearch] = useState('')
@@ -30,19 +31,26 @@ function App() {
                 data: doc.data(),
             })))
         ))
+        db.collection('message').onSnapshot(snapShot => (
+            setAllMessages(snapShot.docs.map(doc => ({
+                id: doc.id,
+                data: doc.data(),
+            })))
+        ))
         setCurrentMessages((currContact && currContact.messages) || [])
         filterContacts(data, search)
     }, [contactSelected, data, search])
 
     function pushMessage() {
-        const index = data.findIndex((d) => d.contact.id === contactSelected.id)
-        const newData = Object.assign([], data, {
-            [index]: {
-                contact: contactSelected,
-                messages: [...data[index].messages, new Message(true, message, new Date())],
-            },
+
+        db.collection("message").add({
+            name: currentUser,
+            msg: message,
+            to:contactSelected,
+            timestamp: new Date().getTime()
         })
-        setData(newData)
+        //
+        // setData(newData)
         setMessage('')
     }
 
@@ -53,16 +61,54 @@ function App() {
         setFilterContacts(result)
     }
 
+    const getCurrentUserdetails = () => {
+        console.log(allUsers);
+        return allUsers.filter(user => user.data.userName === currentUser)[0];
+    }
+
     const createUserIfNotExists = (userName) => {
         setUser(userName);
         console.log(allUsers);
-        allUsers.forEach(user => {
-            if (user.data.name === userName) {
-                db.collection("users").add({
-                    userName: userName
-                })
-            }
+        const filters = allUsers.filter(user => user.data.userName === userName)
+        if(filters.length == 0) {
+            db.collection("users").add({
+                userName: userName
+            })
+        }
+
+    }
+
+    const updateLastViewedTime = (userName) => {
+        const currUserDet = getCurrentUserdetails().data;
+        // if(currUserDet.)
+        db.collection("users").add({
+
         })
+    }
+
+    const filterUserMessages = (messages, userName) => {
+        console.log(" All Message - " + userName)
+        console.log(messages)
+        console.log(" Messages end ....  ")
+        return messages.filter(user => user.data.name === userName )
+    }
+
+    const showOtherUsersContacts = (user) => {
+        if(user.data.userName !==currentUser)
+            return <ContactBox
+                userName={user.data.userName}
+                messages={filterToUserMessages(messages, currentUser)}
+                key={user.id}
+                currentUser={getCurrentUserdetails()}
+                setContactSelected = {setContactSelected}
+            />
+    }
+
+    const filterToUserMessages = (messages, userName) => {
+        console.log(" All Message - " + userName)
+        console.log(messages)
+        console.log(" Messages end ....  ")
+        return [...messages.filter(user => user.data.to === currentUser &&  user.data.name === contactSelected ),...messages.filter(user => user.data.name === currentUser &&  user.data.to === contactSelected )]
     }
 
     return (
@@ -77,22 +123,17 @@ function App() {
                         </header>
                         <Search search={search} setSearch={setSearch}/>
                         <div className="contact-boxes">
-                            {filteredContacts.map(({contact, messages}) => (
-                                <ContactBox
-                                    contact={contact}
-                                    key={contact.id}
-                                    setContactSelected={setContactSelected}
-                                    messages={messages}
-                                />
+                            {allUsers.map(user => (
+                                showOtherUsersContacts(user)
                             ))}
                         </div>
                     </aside>
-                    {contactSelected.id ? (
+                    {contactSelected !== "" ? (
                         <main>
                             <header>
-                                <Avatar user={contactSelected} showName/>
+                                <Avatar user={{name:contactSelected}} showName/>
                             </header>
-                            <MessagesBox messages={currentMessages}/>
+                            <MessagesBox messages={filterToUserMessages(messages, currentUser)} currentUser={currentUser} />
                             <ChatInputBox message={message} setMessage={setMessage} pushMessage={pushMessage}/>
                         </main>
                     ) : (

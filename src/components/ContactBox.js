@@ -2,24 +2,30 @@ import React from 'react'
 import doubleCheck from '../assets/done_all.svg'
 import Avatar from './Avatar'
 
-export default function ContactBox({ contact, setContactSelected, messages }) {
-    const maxTs = Math.max(...messages.map((m) => m.date.getTime()))
-    const lastMsg = messages.find((m) => m.date.getTime() === maxTs)
+export default function ContactBox({userName, messages, currentUser, setContactSelected}) {
 
-    function truncate(text, length) {
-        return text.length > length ? `${text.substring(0, length)} ...` : text
+    const getMaxMsg = (messages) => {
+        let lastMsg = {data: {msg: "No messages yet"}};
+        let max = -1;
+        if (messages === undefined)
+            return lastMsg
+        for (let i = 0; i < messages.length; i++) {
+            let msg = messages[i]
+            if (max < msg.data.timestamp) {
+                max = max < msg.data.timestamp
+                lastMsg = msg
+            }
+        }
+        return lastMsg;
     }
+
     return (
-        <div className="contact-box" onClick={() => setContactSelected(contact)}>
-            <Avatar user={contact} />
+        <div className="contact-box" onClick={() => setContactSelected(userName)}>
+            <Avatar user={{name: "advadv"}}/>
             <div className="right-section">
                 <div className="contact-box-header">
-                    <h3 className="avatar-title">{contact.name}</h3>
-                    <span className="time-mark">{lastMsg.date.toLocaleDateString()}</span>
-                </div>
-                <div className="last-msg">
-                    <img src={doubleCheck} alt="" className="icon-small" />
-                    <span className="text">{truncate(lastMsg.msg, 30)}</span>
+                    <h3 className="avatar-title">{userName}</h3>
+                    {/*<span className="time-mark">{lastMsg.date.toLocaleDateString()}</span>*/}
                 </div>
             </div>
         </div>
